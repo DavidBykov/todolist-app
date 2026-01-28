@@ -1,28 +1,23 @@
 // app/page.tsx
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+// ИСПОЛЬЗУЕМ ОТНОСИТЕЛЬНЫЙ ПУТЬ
+import { addTodo } from './page-actions';
+import { ClientKanbanWrapper } from "./components/ClientKanbanWrapper";
 
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { addTodo } from './page-actions'
-import { ClientKanbanWrapper } from './components/ClientKanbanWrapper'
+export const revalidate = 0;
 
-export const revalidate = 0
-
-// ИЗМЕНЕНИЕ 1: Меняем имя друга
-const ASSIGNEES = ['Давид', 'Илья', 'Оба']
-const PROJECTS = ['🎬 Производство Контента', '📣 Маркетинг и Продвижение', '🧠 Стратегия и Аналитика', '🛠️ Техническое Обслуживание']
-const STATUSES = ['📥 Бэклог Идей', '🎯 К Планированию', '📝 В Работе', '✅ На Утверждение', '🗓️ Запланировано', '🚀 Опубликовано', '📈 Анализ']
-
+const ASSIGNEES = ['Давид', 'Илья', 'Оба'];
+const PROJECTS = ['🎬 Производство Контента', '📣 Маркетинг и Продвижение', '🧠 Стратегия и Аналитика', '🛠️ Техническое Обслуживание'];
+const STATUSES = ['📥 Бэклог Идей', '🎯 К Планированию', '📝 В Работе', '✅ На Утверждение', '🗓️ Запланировано', '🚀 Опубликовано', '📈 Анализ'];
 
 export default async function Home() {
-  const supabase = createServerSupabaseClient()
-  // Возвращаем select('*'), так как эти данные нужны для initialTodos
-  const { data: todos } = await supabase.from('todos').select('*').order('created_at', { ascending: true })
+  const supabase = createServerSupabaseClient();
+  const { data: todos } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
 
-  // ИЗМЕНЕНИЕ 2: Создаем уникальный ключ на основе ID всех задач
-  const todosKey = todos?.map(t => t.id).join('-') || ''
+  const todosKey = todos?.map(t => t.id).join('-') || '';
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-        {/* ... остальной код без изменений ... */}
+    <div className="p-4 sm:p-6 lg:p-8">
         <header className="mb-8">
             <h1 className="text-3xl font-bold text-center text-gray-800">Фабрика Контента</h1>
         </header>
@@ -51,6 +46,8 @@ export default async function Home() {
             key={todosKey} 
             initialTodos={todos || []} 
             statuses={STATUSES}
+            projects={PROJECTS}
+            assignees={ASSIGNEES}
         />
     </div>
   )

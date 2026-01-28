@@ -2,81 +2,77 @@
 'use client'
 
 import { useState } from 'react'
-// ИЗМЕНЕНИЕ 1: Импортируем DragOverlay
 import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core'
-import { updateTaskStatus } from '../actions'
 import { DroppableColumn } from './DroppableColumn'
-import { TaskCardItem } from './TaskCardItem' // Импортируем "глупый" компонент для оверлея
+import { TaskCardItem } from './TaskCardItem'
+import { TaskModal } from './TaskModal'
 
+// Тип Todo остается прежним
 type Todo = {
-  id: number;
-  status: string;
-  task_text: string;
-  is_completed: boolean;
-  project: string;
-  assignee: string;
+  id: number; status: string; task_text: string; is_completed: boolean; project: string; assignee: string; description: string | null; due_date: string | null; asset_url: string | null;
 };
 
+// ИЗМЕНЕНИЕ 1: Пропсы теперь включают onDragEnd и новый 'todos'
 type KanbanBoardProps = {
-  initialTodos: Todo[];
+  todos: Todo[]; // <-- Теперь это не initialTodos, а просто todos
   statuses: string[];
+  onDragEnd: (event: DragEndEvent) => void; // <-- Получаем обработчик от родителя
 }
 
-export function KanbanBoard({ initialTodos, statuses }: KanbanBoardProps) {
-  const [todos, setTodos] = useState(initialTodos)
-  // ИЗМЕНЕНИЕ 2: Создаем состояние для хранения активной (перетаскиваемой) задачи
+export function KanbanBoard({ todos, statuses, onDragEnd }: KanbanBoardProps) {
+  // ИЗМЕНЕНИЕ 2: Внутреннее состояние 'todos' и 'setTodos' ПОЛНОСТЬЮ УДАЛЕНО
+  
   const [activeTask, setActiveTask] = useState<Todo | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Todo | null>(null)
 
+  // ИЗМЕНЕНИЕ 3: Группировка теперь использует 'todos' из пропсов
   const groupedTodos = statuses.reduce((acc, status) => {
-    acc[status] = todos.filter(todo => todo.status === status)
+    acc[status] = todos.filter(todo => todo.status === status) // <-- Используем пропс
     return acc
   }, {} as Record<string, Todo[]>)
 
-  // ИЗМЕНЕНИЕ 3: Добавляем обработчик НАЧАЛА перетаскивания
   function handleDragStart(event: DragStartEvent) {
     const { active } = event
-    const task = todos.find(t => String(t.id) === active.id)
+    const task = todos.find(t => String(t.id) === active.id) // <-- Ищем в пропсах
     if (task) {
       setActiveTask(task)
     }
   }
   
-  function handleDragEnd(event: DragEndEvent) {
-    // ИЗМЕНЕНИЕ 4: Сбрасываем активную задачу в конце
-    setActiveTask(null)
+  // ИЗМЕНЕНИЕ 4: handleDragEnd ПОЛНОСТЬЮ УДАЛЕН. Мы используем тот, что пришел в пропсах.
 
-    const { active, over } = event
-    if (over && active.id !== over.id) {
-      const activeId = String(active.id)
-      const overId = String(over.id)
-      const task = todos.find(t => String(t.id) === activeId)
-      const newStatus = overId
-      if (task && task.status !== newStatus) {
-        setTodos(prev => prev.map(t => String(t.id) === activeId ? { ...t, status: newStatus } : t))
-        updateTaskStatus(Number(activeId), newStatus)
-      }
-    }
-  }
+  const openModal = (task: Todo) => { setSelectedTask(task) }
+  const closeModal = () => { setSelectedTask(null) }
 
   return (
-    // ИЗМЕНЕНИЕ 5: Добавляем onDragStart
-    <DndContext 
-      collisionDetection={closestCenter} 
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <main className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6">
-        {statuses.map(status => (
-          <DroppableColumn key={status} id={status} title={status} tasks={groupedTodos[status]} statuses={statuses} />
-        ))}
-      </main>
-
-      {/* ИЗМЕНЕНИЕ 6: Добавляем сам оверлей */}
-      <DragOverlay>
-        {activeTask ? (
-          <TaskCardItem task={activeTask} statuses={statuses} />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    <>
+      {/* ИЗМЕНЕНИЕ 5: onDragEnd теперь берется из пропсов */}
+      <DndContext 
+        collisionDetection={closestCenter} 
+        onDragStart={handleDragStart}
+        onDragEnd={onDragEnd} // <-- Используем обработчик от родителя
+      >
+        <main className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6">
+          {statuses.map(status => (
+            <DroppableColumn 
+              key={status} 
+              id={status} 
+              title={status} 
+              tasks={groupedTodos[status] || []} // Добавил || [] для надежности
+              statuses={statuses}
+              onCardClick={openModal}
+            />
+          ))}
+        </main>
+        <DragOverlay>
+          {activeTask ? (<TaskCardItem task={activeTask} statuses={statuses} />) : null}
+        </DragOverlay>
+      </DndContext>
+      <TaskModal 
+        task={selectedTask} 
+        onClose={closeModal} 
+        assignees={['Давид', 'Илья', 'Оба']}
+      />
+    </>
   )
 }
