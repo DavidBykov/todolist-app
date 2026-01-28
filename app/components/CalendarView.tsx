@@ -1,19 +1,21 @@
 // app/components/CalendarView.tsx
 'use client'
 
-import { useState, useCallback } from 'react' // <-- ИЗМЕНЕНИЕ 1: Импортируем хуки
-import { Calendar, dateFnsLocalizer, View, Views } from 'react-big-calendar' // <-- ИЗМЕНЕНИЕ 2: Импортируем View
-import format from 'date-fns/format'
-import parse from 'date-fns/parse'
-import startOfWeek from 'date-fns/startOfWeek'
-import getDay from 'date-fns/getDay'
-import ru from 'date-fns/locale/ru'
+import { useState, useCallback } from 'react'
+import { Calendar, dateFnsLocalizer, View, Views } from 'react-big-calendar'
+
+// --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+// Импортируем все функции как именованные из основного пакета date-fns
+import { format, parse, startOfWeek, getDay } from 'date-fns' 
+import { ru } from 'date-fns/locale' // Импортируем локаль отдельно
+
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 // Настройка локализации (без изменений)
 const locales = {
   'ru': ru,
 }
+
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -35,11 +37,9 @@ type CalendarViewProps = {
 }
 
 export function CalendarView({ events }: CalendarViewProps) {
-  // ИЗМЕНЕНИЕ 3: Создаем состояние для даты и вида
   const [date, setDate] = useState(new Date());
   const [view, setView] = useState<View>(Views.MONTH);
 
-  // ИЗМЕНЕНИЕ 4: Создаем обработчики, которые будет вызывать календарь
   const onNavigate = useCallback((newDate: Date) => setDate(newDate), [setDate]);
   const onView = useCallback((newView: View) => setView(newView), [setView]);
 
@@ -59,7 +59,6 @@ export function CalendarView({ events }: CalendarViewProps) {
         day: "День",
         agenda: "Повестка"
       }}
-      // ИЗМЕНЕНИЕ 5: Передаем наше состояние и обработчики в календарь
       date={date}
       view={view}
       onNavigate={onNavigate}
